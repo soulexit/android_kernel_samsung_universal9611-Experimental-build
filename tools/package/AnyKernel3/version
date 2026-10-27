@@ -1,0 +1,29 @@
+****************************************************
+
+Something New - Overclocked
+
+*****************************************************
+ Device    : Galaxy A51 - a51 / gta4xl
+ Chipset   : Exynos 9611, 4x Cortex-A73 + 4x A53
+ GPU       : Mali-G72 MP3 - Arm DDK r38p1
+ Android   : OneUI 5 / AOSP based ROMs
+ Toolchain : WeebX Clang 19.1.5 - LLVM=1
+ Source    : github.com/Exynos9611Development
+             android_kernel_samsung_universal9611
+
+*****************************************************
+                  OVERCLOCK BUILD
+*****************************************************
+ CPU little : 403 - 2054 MHz - stock 1742 MHz
+ CPU big    : 728 - 2496 MHz - stock 2314 MHz
+ GPU G3D    : 260 - 1200 MHz - stock 1053 MHz
+ Voltage margins and thermal caps follow the OC
+ Falls back to stock levels if firmware lacks them
+*****************************************************
+                  MAIN FEATURES
+*****************************************************
+ SELinux enforcing, seccomp enabled
+ Clean source, only OC and needed fixes added
+ Balance between performance and battery life
+ Stock boot flow, no KernelSU
+*****************************************************
