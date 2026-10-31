@@ -53,8 +53,6 @@ Environment variables:
 ## Flashing
 
 1. Flash the zip from the Releases page in a custom recovery (TWRP / OrangeFox).
-2. Do **not** flash `mali-r49p0-vendor-magisk.zip` with this kernel — the kernel
-   driver is r38p1 and the A51 stock userspace blobs match it.
 
 ## Notes
 
