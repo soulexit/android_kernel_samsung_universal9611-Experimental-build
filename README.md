@@ -18,7 +18,7 @@ This tree is the source used for the experimental builds published in the
 | CPU boost | Input boost to 1.66 GHz (big) / 1.22 GHz (little) for 120 ms |
 | Tick | **300 Hz** (NO_HZ_IDLE) |
 | GPU G3D | 260 – **1200 MHz** (stock 1053 MHz) |
-| GPU boost | Interactive governor highspeed clock at **1200 MHz** |
+| GPU boost | Interactive highspeed step **1200 MHz** set by the driver |
 | I/O scheduler | **BFQ** default for UFS (blk-mq) |
 | Memory | Cacheline-aligned SLUB caches, relaxed page-allocator locking |
 | Storage | F2FS congestion timeout reduced to 6 ms |
@@ -39,9 +39,10 @@ automatically.
   updates are backported on top.
 - Input events briefly raise the little/big cluster minimums through PM QoS
   (`1222`/`1664 MHz` by default, 120 ms); values are exposed as the
-  `input.boost_*` kernel parameters.
-- BFQ is selected for multi-queue block devices such as UFS, while non-mq
-  devices keep CFQ.
+  `boost_*` parameters of the built-in `input_core` code.
+- UFS now runs on blk-mq (`CONFIG_SCSI_MQ_DEFAULT`), so BFQ is used there.
+  Other blk-mq devices try BFQ first and fall back to mq-deadline, while
+  non-mq devices keep CFQ.
 - SLUB objects are aligned to hardware cache lines and `rmqueue_bulk()` drops
   the zone lock and reschedules when possible.
 - The kernel is built with `-O3`; `DEBUG_LIST`, `SCHED_DEBUG` and `SLUB_DEBUG`

@@ -39,18 +39,6 @@ ramdisk_compression=auto;
 set_perm_recursive 0 0 755 644 $ramdisk/*;
 set_perm_recursive 0 0 750 750 $ramdisk/init* $ramdisk/sbin;
 
-# mount stuff
-AK_FOLDER=/tmp/anykernel
-mount /system/
-mount /system_root/
-#mount /vendor/
-mount -o rw,remount -t auto /system_root > /dev/null
-#mount -o rw,remount -t auto /vendor > /dev/null
-
-cp $AK_FOLDER/init.grass.rc /system_root/system/etc/init/
-chmod 644 system_root/system/etc/init/init.grass.rc
-
-
 ## AnyKernel install
 #Method 1:
 #dump_boot;

@@ -77,6 +77,19 @@ static void gpex_dvfs_context_init(struct device **dev)
 		dvfs.governor_type = G3D_DVFS_GOVERNOR_DEFAULT;
 	}
 
+	/*
+	 * The boot DTB shipped with the stock firmware still carries the old
+	 * interactive thresholds (764 MHz / 75).  Since the kernel overclocks
+	 * G3D to 1200 MHz, raise the highspeed step at runtime as well so the
+	 * extra levels are actually used.  Keep the DT value if the clock is
+	 * not part of the built table.
+	 */
+	if (dvfs.governor_type == G3D_DVFS_GOVERNOR_INTERACTIVE) {
+		if (gpex_clock_get_table_idx(1200000) >= 0)
+			dvfs.interactive.highspeed_clock = 1200000;
+		dvfs.interactive.highspeed_load = 70;
+	}
+
 	for (i = 0; i < G3D_MAX_GOVERNOR_NUM; i++) {
 		gpu_dvfs_update_start_clk(i, gpex_clock_get_boot_clock());
 	}
