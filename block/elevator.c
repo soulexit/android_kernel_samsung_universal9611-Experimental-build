@@ -238,10 +238,10 @@ int elevator_init(struct request_queue *q, char *name)
 			if (q->tag_set && q->tag_set->flags & BLK_MQ_F_NO_SCHED_BY_DEFAULT)
 				return 0;
 
-			if (q->nr_hw_queues == 1)
-				e = elevator_get(q, "mq-deadline", false);
-			else if (IS_ENABLED(CONFIG_DEFAULT_BFQ))
+			if (IS_ENABLED(CONFIG_DEFAULT_BFQ))
 				e = elevator_get(q, "bfq", false);
+			if (!e && q->nr_hw_queues == 1)
+				e = elevator_get(q, "mq-deadline", false);
 			if (!e)
 				return 0;
 		} else
