@@ -26,5 +26,5 @@ on init
 on property:sys.boot_completed=1
 
     write /sys/devices/platform/11500000.mali/power_policy adaptive
-    write /sys/devices/platform/11500000.mali/highspeed_clock 764000
-    write /sys/devices/platform/11500000.mali/highspeed_load 75
+    write /sys/devices/platform/11500000.mali/highspeed_clock 1200000
+    write /sys/devices/platform/11500000.mali/highspeed_load 70

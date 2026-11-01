@@ -32,6 +32,71 @@
 // Input Booster +
 #include <linux/input/input_booster.h>
 
+#ifdef CONFIG_CPU_INPUT_BOOST
+#include <linux/pm_qos.h>
+
+static struct pm_qos_request cpu_boost_big_qos;
+static struct pm_qos_request cpu_boost_little_qos;
+static struct work_struct cpu_boost_set_work;
+static struct delayed_work cpu_boost_unset_work;
+
+static unsigned int cpu_boost_big_freq = 1664000;
+static unsigned int cpu_boost_little_freq = 1222000;
+static unsigned int cpu_boost_duration_ms = 120;
+module_param_named(boost_big_freq, cpu_boost_big_freq, uint, 0644);
+module_param_named(boost_little_freq, cpu_boost_little_freq, uint, 0644);
+module_param_named(boost_duration_ms, cpu_boost_duration_ms, uint, 0644);
+
+static void cpu_boost_set(struct work_struct *work)
+{
+	pm_qos_update_request(&cpu_boost_big_qos, cpu_boost_big_freq);
+	pm_qos_update_request(&cpu_boost_little_qos, cpu_boost_little_freq);
+}
+
+static void cpu_boost_unset(struct work_struct *work)
+{
+	pm_qos_update_request(&cpu_boost_big_qos, PM_QOS_DEFAULT_VALUE);
+	pm_qos_update_request(&cpu_boost_little_qos, PM_QOS_DEFAULT_VALUE);
+}
+
+static void cpu_input_boost(unsigned int type, unsigned int code, int value)
+{
+	bool trigger = false;
+
+	if (type == EV_KEY) {
+		trigger = value && (code == BTN_TOUCH || code == KEY_BACK ||
+				    code == KEY_HOMEPAGE || code == KEY_RECENT ||
+				    code == KEY_POWER || code == KEY_VOLUMEUP ||
+				    code == KEY_VOLUMEDOWN);
+	} else if (type == EV_ABS) {
+		trigger = (code == ABS_MT_TRACKING_ID && value >= 0) ||
+			  (code == ABS_MT_PRESSURE && value > 0);
+	}
+
+	if (!trigger)
+		return;
+
+	schedule_work(&cpu_boost_set_work);
+	mod_delayed_work(system_wq, &cpu_boost_unset_work,
+			 msecs_to_jiffies(cpu_boost_duration_ms));
+}
+
+static int __init cpu_input_boost_init(void)
+{
+	INIT_WORK(&cpu_boost_set_work, cpu_boost_set);
+	INIT_DELAYED_WORK(&cpu_boost_unset_work, cpu_boost_unset);
+	pm_qos_add_request(&cpu_boost_big_qos, PM_QOS_CLUSTER1_FREQ_MIN,
+			   PM_QOS_DEFAULT_VALUE);
+	pm_qos_add_request(&cpu_boost_little_qos, PM_QOS_CLUSTER0_FREQ_MIN,
+			   PM_QOS_DEFAULT_VALUE);
+	return 0;
+}
+late_initcall(cpu_input_boost_init);
+#else
+static inline void cpu_input_boost(unsigned int type, unsigned int code,
+				   int value) { }
+#endif
+
 MODULE_AUTHOR("Vojtech Pavlik <vojtech@suse.cz>");
 MODULE_DESCRIPTION("Input core");
 MODULE_LICENSE("GPL");
@@ -857,6 +922,10 @@ void input_event(struct input_dev *dev,
 		spin_lock_irqsave(&dev->event_lock, flags);
 		input_handle_event(dev, type, code, value);
 		spin_unlock_irqrestore(&dev->event_lock, flags);
+
+#ifdef CONFIG_CPU_INPUT_BOOST
+		cpu_input_boost(type, code, value);
+#endif
 
 		/* Input Booster + */
 		if (device_tree_infor != NULL) {

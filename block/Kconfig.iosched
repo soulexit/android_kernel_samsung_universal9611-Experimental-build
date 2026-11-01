@@ -91,6 +91,14 @@ config IOSCHED_BFQ
 	real-time applications.  Details in
 	Documentation/block/bfq-iosched.txt
 
+config DEFAULT_BFQ
+	bool "Use BFQ as the default blk-mq I/O scheduler"
+	depends on IOSCHED_BFQ
+	default n
+	---help---
+	Use BFQ as the default I/O scheduler for blk-mq devices,
+	including multi-queue devices such as UFS. If unsure, say N.
+
 config BFQ_GROUP_IOSCHED
        bool "BFQ hierarchical scheduling support"
        depends on IOSCHED_BFQ && BLK_CGROUP

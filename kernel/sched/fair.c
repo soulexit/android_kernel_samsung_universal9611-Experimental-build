@@ -7292,9 +7292,12 @@ static int select_idle_core(struct task_struct *p, struct sched_domain *sd, int 
 
 		for_each_cpu(cpu, cpu_smt_mask(core)) {
 			cpumask_clear_cpu(cpu, cpus);
-			if (!idle_cpu(cpu))
+			if (!idle_cpu(cpu)) {
 				idle = false;
+				break;
+			}
 		}
+		cpumask_andnot(cpus, cpus, cpu_smt_mask(core));
 
 		if (idle)
 			return core;
@@ -8593,6 +8596,14 @@ again:
 		fttstat.pick_ftt++;
 #endif
 
+#ifdef CONFIG_SMP
+	/*
+	 * Move the next running task to the front of the list, so our
+	 * cfs_tasks list becomes an MRU one.
+	 */
+	list_move(&p->se.group_node, &rq->cfs_tasks);
+#endif
+
 	/*
 	 * Since we haven't yet done put_prev_entity and if the selected task
 	 * is a different task than we started out with, try and touch the
@@ -8637,6 +8648,14 @@ simple:
 	} while (cfs_rq);
 
 	p = task_of(se);
+
+#ifdef CONFIG_SMP
+	/*
+	 * Move the next running task to the front of the list, so our
+	 * cfs_tasks list becomes an MRU one.
+	 */
+	list_move(&p->se.group_node, &rq->cfs_tasks);
+#endif
 
 	if (hrtick_enabled(rq))
 		hrtick_start_fair(rq, p);
@@ -9107,11 +9126,12 @@ static void detach_task(struct task_struct *p, struct lb_env *env,
 static struct task_struct *detach_one_task(struct lb_env *env,
 					   struct rq_flags *rf)
 {
-	struct task_struct *p, *n;
+	struct task_struct *p;
 
 	lockdep_assert_held(&env->src_rq->lock);
 
-	list_for_each_entry_safe(p, n, &env->src_rq->cfs_tasks, se.group_node) {
+	list_for_each_entry_reverse(p,
+			&env->src_rq->cfs_tasks, se.group_node) {
 		if (!can_migrate_task(p, env))
 			continue;
 
@@ -9157,7 +9177,7 @@ static int detach_tasks(struct lb_env *env, struct rq_flags *rf)
 		if (env->idle != CPU_NOT_IDLE && env->src_rq->nr_running <= 1)
 			break;
 
-		p = list_first_entry(tasks, struct task_struct, se.group_node);
+		p = list_last_entry(tasks, struct task_struct, se.group_node);
 
 		env->loop++;
 		/* We've more or less seen every task there is, call it quits */
@@ -9215,7 +9235,7 @@ static int detach_tasks(struct lb_env *env, struct rq_flags *rf)
 
 		continue;
 next:
-		list_move_tail(&p->se.group_node, tasks);
+		list_move(&p->se.group_node, tasks);
 	}
 
 	/*
@@ -12240,6 +12260,17 @@ static unsigned int get_rr_interval_fair(struct rq *rq, struct task_struct *task
 
 	return rr_interval;
 }
+
+#ifdef CONFIG_SCHED_CASS
+#include "cass.c"
+
+/* Use CASS. A dummy wrapper ensures the replaced function is still "used". */
+static inline void *select_task_rq_fair_dummy(void)
+{
+	return (void *)select_task_rq_fair;
+}
+#define select_task_rq_fair cass_select_task_rq_fair
+#endif /* CONFIG_SCHED_CASS */
 
 /*
  * All the scheduling class methods:

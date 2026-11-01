@@ -25,6 +25,15 @@ config INPUT
 
 if INPUT
 
+config CPU_INPUT_BOOST
+	bool "CPU input boost"
+	default y
+	help
+	  Briefly raise the minimum CPU frequency when a touch or key event
+	  is reported. This improves UI responsiveness at the cost of some
+	  extra power use. The boost frequency and duration can be tuned via
+	  the input_cpu_boost module parameters.
+
 config INPUT_LEDS
 	tristate "Export input device LEDs in sysfs"
 	depends on LEDS_CLASS

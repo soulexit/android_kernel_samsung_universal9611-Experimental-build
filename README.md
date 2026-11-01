@@ -14,7 +14,16 @@ This tree is the source used for the experimental builds published in the
 | GPU | Mali-G72 MP3, Arm DDK **r38p1** (`drivers/gpu/arm/bv_r38p1`) |
 | CPU little | 403 – **2054 MHz** (stock 1742 MHz) |
 | CPU big | 728 – **2496 MHz** (stock 2314 MHz) |
+| CPU scheduler | **CASS** capacity-aware wakeup plus upstream EAS backports |
+| CPU boost | Input boost to 1.66 GHz (big) / 1.22 GHz (little) for 120 ms |
+| Tick | **300 Hz** (NO_HZ_IDLE) |
 | GPU G3D | 260 – **1200 MHz** (stock 1053 MHz) |
+| GPU boost | Interactive governor highspeed clock at **1200 MHz** |
+| I/O scheduler | **BFQ** default for UFS (blk-mq) |
+| Memory | Cacheline-aligned SLUB caches, relaxed page-allocator locking |
+| Storage | F2FS congestion timeout reduced to 6 ms |
+| Network | BBR default with fq/fq_codel available |
+| Build | Clang/LLD with `-O3`, debug list/scheduler/SLUB checks disabled |
 | Security | SELinux enforcing, seccomp + seccomp filter enabled |
 | KernelSU | Not included (stock boot flow) |
 
@@ -22,6 +31,21 @@ The overclock only lifts the ACPM/ECT `MINMAX` and DVFS-domain caps and adds
 voltage headroom where a new top level has to be created. If the firmware does
 not expose the higher levels, the driver falls back to the stock maximum
 automatically.
+
+### Performance changes
+
+- CASS wakeup placement replaces the default capacity-aware wakeup path;
+  `select_idle_core()`, tail-queue task selection and newly-idle blocked-load
+  updates are backported on top.
+- Input events briefly raise the little/big cluster minimums through PM QoS
+  (`1222`/`1664 MHz` by default, 120 ms); values are exposed as the
+  `input.boost_*` kernel parameters.
+- BFQ is selected for multi-queue block devices such as UFS, while non-mq
+  devices keep CFQ.
+- SLUB objects are aligned to hardware cache lines and `rmqueue_bulk()` drops
+  the zone lock and reschedules when possible.
+- The kernel is built with `-O3`; `DEBUG_LIST`, `SCHED_DEBUG` and `SLUB_DEBUG`
+  are disabled.
 
 ## Building
 
